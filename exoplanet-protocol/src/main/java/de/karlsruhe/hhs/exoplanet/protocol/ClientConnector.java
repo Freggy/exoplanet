@@ -7,6 +7,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -46,14 +49,14 @@ public class ClientConnector {
 
         this.readThread = new Thread(() -> {
             try (final BufferedReader in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()))) {
-                String data;
-                while ((data = in.readLine()) != null) {
+                String payload;
+                while ((payload = in.readLine()) != null) {
                     if (this.readThread.isInterrupted()) {
                         in.close();
                         return;
                     }
 
-                    final String[] split = data.split(":");
+                    final String[] split = payload.split(":");
                     final String id = split[0];
                     final Optional<Packet> packetOptional = this.registry.fromId(id);
 
@@ -62,8 +65,29 @@ public class ClientConnector {
                         continue;
                     }
 
+                    final List<String> complete;
+
+                    if (split.length > 2) {
+                        // We need to have this edge case here because
+                        // one payload is formatted as follows:
+                        // mvscaned:Measure|Ground|temp:POSITION|x|y|direction
+                        // so the normal way of splitting the string does not work.
+
+                        // After splitting it once our payload looks like this:
+                        // [0] = mvscanned
+                        // [1] = Measure|Ground|temp
+                        // [2] = POSITION|x|y|direction
+                        // So in order to retrieve the actual payload we have to split [1] and [2] at "|".
+
+                        complete = new ArrayList<>();
+                        complete.addAll(Arrays.asList(split[1].split("\\|"))); // Contains Measure|Ground|temp
+                        complete.addAll(Arrays.asList(split[2].split("\\|"))); // POSITION|x|y|direction
+                    } else {
+                        complete = Arrays.asList(split[1].split("\\|"));
+                    }
+
                     final Packet packet = packetOptional.get();
-                    packet.decode(split[1].split("|"));
+                    packet.decode(complete);
 
                     this.pendingPackets.add(packet);
                 }

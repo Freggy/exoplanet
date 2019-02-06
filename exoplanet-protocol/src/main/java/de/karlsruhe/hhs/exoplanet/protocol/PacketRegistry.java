@@ -12,7 +12,7 @@ public class PacketRegistry {
     private final Map<String, Class<? extends Packet>> packets = new HashMap<>();
 
     static {
-
+        // TODO: register packets
     }
 
     public Optional<Packet> fromId(final String id) {

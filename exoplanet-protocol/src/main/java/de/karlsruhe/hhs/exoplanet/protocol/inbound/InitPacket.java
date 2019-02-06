@@ -1,6 +1,7 @@
 package de.karlsruhe.hhs.exoplanet.protocol.inbound;
 
 import de.karlsruhe.hhs.exoplanet.protocol.Packet;
+import java.util.List;
 
 /**
  * @author Yannic Rieger
@@ -8,11 +9,11 @@ import de.karlsruhe.hhs.exoplanet.protocol.Packet;
 public class InitPacket implements Packet {
 
     public int getWidth() {
-        return width;
+        return this.width;
     }
 
     public int getHeight() {
-        return height;
+        return this.height;
     }
 
     private int width;
@@ -21,13 +22,15 @@ public class InitPacket implements Packet {
 
     // TODO: size
 
+    @Override
     public String encode() {
         return "";
     }
 
-    public void decode(String[] data) {
-        this.size = data[0];
-        this.width = Integer.valueOf(data[1]);
-        this.height = Integer.valueOf(data[1]);
+    @Override
+    public void decode(final List<String> data) {
+        this.size = data.get(0);
+        this.width = Integer.valueOf(data.get(1));
+        this.height = Integer.valueOf(data.get(2));
     }
 }
