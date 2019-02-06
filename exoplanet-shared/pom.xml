@@ -9,7 +9,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>exoplanet-protocol</artifactId>
+  <artifactId>exoplanet-shared</artifactId>
 
   <dependencies>
     <dependency>

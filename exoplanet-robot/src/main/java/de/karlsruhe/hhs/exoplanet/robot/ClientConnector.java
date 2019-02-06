@@ -40,7 +40,7 @@ public class ClientConnector {
     }
 
     /**
-     * @throws Exception
+     *
      */
     public synchronized void connectAndStartReading() {
         this.console.println("[ClientConnector] Connecting to " + this.address.getHostString() + ":" + this.address.getPort());
@@ -119,8 +119,9 @@ public class ClientConnector {
         }
     }
 
+
     /**
-     * @throws IOException
+     *
      */
     public synchronized void disconnect() {
         this.readThread.interrupt();

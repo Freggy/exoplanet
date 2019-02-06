@@ -23,7 +23,7 @@
   <modules>
     <module>exoplanet-station</module>
     <module>exoplanet-robot</module>
-    <module>exoplanet-protocol</module>
+    <module>exoplanet-shared</module>
   </modules>
 
   <dependencies>
