@@ -1,6 +1,7 @@
-package de.karlsruhe.hhs.exoplanet.protocol.inbound;
+package de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound;
 
-import de.karlsruhe.hhs.exoplanet.protocol.Packet;
+
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
 import java.util.List;
 
 /**

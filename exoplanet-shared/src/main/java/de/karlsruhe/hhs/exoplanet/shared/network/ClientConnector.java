@@ -1,5 +1,8 @@
-package de.karlsruhe.hhs.exoplanet.protocol;
+package de.karlsruhe.hhs.exoplanet.shared.network;
 
+import de.karlsruhe.hhs.exoplanet.shared.Console;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.PacketRegistry;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -11,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 /**
@@ -19,30 +22,34 @@ import java.util.concurrent.LinkedBlockingDeque;
  */
 public class ClientConnector {
 
-    public Queue<Packet> getPendingPackets() {
+    public BlockingQueue<Packet> getPendingPackets() {
         return this.pendingPackets;
     }
 
-    private final Queue<Packet> pendingPackets = new LinkedBlockingDeque<>();
+    private final BlockingQueue<Packet> pendingPackets = new LinkedBlockingDeque<>();
     private final PacketRegistry registry = new PacketRegistry();
     private Socket socket;
     private Thread readThread;
     private BufferedWriter writer;
-    InetSocketAddress address;
+    private final InetSocketAddress address;
+    private final Console console;
 
-    public ClientConnector(final InetSocketAddress address) {
+    public ClientConnector(final Console console, final InetSocketAddress address) {
         this.address = address;
+        this.console = console;
     }
 
     /**
      * @throws Exception
      */
     public synchronized void connectAndStartReading() {
+        this.console.println("[ClientConnector] Connecting to " + this.address.getHostString() + ":" + this.address.getPort());
+
         try {
             this.socket = new Socket(this.address.getHostName(), this.address.getPort());
             this.writer = new BufferedWriter(new OutputStreamWriter(this.socket.getOutputStream()));
         } catch (final Exception ex) {
-            System.out.println("[ClientConnector] Could not bind to server.");
+            this.console.println("[ClientConnector] Could not bind to server.");
             ex.printStackTrace();
             return;
         }
@@ -61,7 +68,7 @@ public class ClientConnector {
                     final Optional<Packet> packetOptional = this.registry.fromId(id);
 
                     if (!packetOptional.isPresent()) {
-                        System.out.println("[ClientConnector] Could not find packet with id " + id);
+                        this.console.println("[ClientConnector] Could not find packet with id " + id);
                         continue;
                     }
 
@@ -107,7 +114,7 @@ public class ClientConnector {
         try {
             this.writer.write(data);
         } catch (final IOException ex) {
-            System.out.println("[ClientConnector] Could not write packet.");
+            this.console.println("[ClientConnector] Could not write packet.");
             ex.printStackTrace();
         }
     }
@@ -115,9 +122,13 @@ public class ClientConnector {
     /**
      * @throws IOException
      */
-    public synchronized void disconnect() throws IOException {
+    public synchronized void disconnect() {
         this.readThread.interrupt();
-        this.writer.close();
-        this.socket.close();
+        try {
+            this.writer.close();
+            this.socket.close();
+        } catch (final IOException ex) {
+            ex.printStackTrace();
+        }
     }
 }

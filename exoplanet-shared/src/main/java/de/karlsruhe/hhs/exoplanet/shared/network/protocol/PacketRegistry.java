@@ -1,12 +1,12 @@
-package de.karlsruhe.hhs.exoplanet.protocol;
+package de.karlsruhe.hhs.exoplanet.shared.network.protocol;
 
-import de.karlsruhe.hhs.exoplanet.protocol.inbound.InitPacket;
-import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotCrashedPacket;
-import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotLandedPacket;
-import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotMoveAndScanResponsePacket;
-import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotMoveResponsePacket;
-import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotRotateResponsePacket;
-import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotScanResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.InitPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotCrashedPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotLandedPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotMoveAndScanResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotMoveResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotRotateResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotScanResponsePacket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -18,7 +18,7 @@ public class PacketRegistry {
 
     private final Map<String, Class<? extends Packet>> packets = new HashMap<>();
 
-    PacketRegistry() {
+    public PacketRegistry() {
         this.packets.put("init", InitPacket.class);
         this.packets.put("landed", RobotLandedPacket.class);
         this.packets.put("scaned", RobotScanResponsePacket.class);

@@ -1,4 +1,4 @@
-package de.karlsruhe.hhs.exoplanet.protocol;
+package de.karlsruhe.hhs.exoplanet.shared.network.protocol;
 
 import java.util.List;
 

@@ -1,7 +1,7 @@
 package de.karlsruhe.hhs.exoplanet.robot;
 
+import de.karlsruhe.hhs.exoplanet.shared.Console;
 import java.net.InetSocketAddress;
-import java.util.Scanner;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -38,20 +38,21 @@ public class Main {
             return;
         }
 
+        final Console console = new Console();
+
         final ExoRobot robot = new ExoRobot(
+            console,
             addressFromStringArray(cmd.getOptionValue("station").split(":")),
             addressFromStringArray(cmd.getOptionValue("planet").split(":"))
         );
 
         robot.start();
-        final Scanner scanner = new Scanner(System.in);
 
         while (true) {
-            System.out.print(">> ");
-            final String instruction = scanner.nextLine();
+            final String instruction = console.getReader().readLine(">> ");
 
             if (instruction.equalsIgnoreCase("exit")) {
-                System.out.println("Destroying ExoRobot...");
+                console.println("Destroying ExoRobot...");
                 robot.destroy();
                 System.exit(0);
             }
@@ -59,7 +60,6 @@ public class Main {
             if (instruction.startsWith("move ")) {
                 // TODO: move robot in dir
             }
-
         }
     }
 
