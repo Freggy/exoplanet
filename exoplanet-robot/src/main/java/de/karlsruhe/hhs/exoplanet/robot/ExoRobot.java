@@ -1,6 +1,5 @@
 package de.karlsruhe.hhs.exoplanet.robot;
 
-import com.sun.org.apache.xml.internal.security.Init;
 import de.karlsruhe.hhs.exoplanet.protocol.ClientConnector;
 import de.karlsruhe.hhs.exoplanet.protocol.Packet;
 import de.karlsruhe.hhs.exoplanet.protocol.inbound.InitPacket;
@@ -22,15 +21,15 @@ public class ExoRobot {
     private ClientConnector stationConnector;
 
     private Thread planetThread;
-    private Thread stationThread;
+    private final Thread stationThread;
 
     public ExoRobot() {
         this.planetThread = new Thread(() -> {
             while (!this.planetThread.isInterrupted()) {
-                Packet received = this.planetConnector.getPendingPackets().poll();
+                final Packet received = this.planetConnector.getPendingPackets().poll();
 
                 if (received instanceof InitPacket) {
-                    InitPacket packet = (InitPacket) received;
+                    final InitPacket packet = (InitPacket) received;
                     this.field = new FieldTile[packet.getHeight()][packet.getWidth()];
 
                 } else if (received instanceof RobotCrashedPacket) {
@@ -49,7 +48,7 @@ public class ExoRobot {
 
         this.stationThread = new Thread(() -> {
             while (!this.planetThread.isInterrupted()) {
-                Packet received = this.stationConnector.getPendingPackets().poll();
+                final Packet received = this.stationConnector.getPendingPackets().poll();
 
                 // TODO: handle packets from station
             }
@@ -60,7 +59,7 @@ public class ExoRobot {
         this.planetConnector.connectAndStartReading();
     }
 
-    public void move(Object direction) {
+    public void move(final Object direction) {
 
     }
 }

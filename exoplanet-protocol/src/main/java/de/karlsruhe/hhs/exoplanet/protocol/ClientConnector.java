@@ -1,7 +1,5 @@
 package de.karlsruhe.hhs.exoplanet.protocol;
 
-import de.karlsruhe.hhs.exoplanet.protocol.Packet;
-import de.karlsruhe.hhs.exoplanet.protocol.PacketRegistry;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -21,28 +19,27 @@ public class ClientConnector {
         return this.pendingPackets;
     }
 
-    private Queue<Packet> pendingPackets = new LinkedBlockingDeque<>();
-    private PacketRegistry registry = new PacketRegistry();
+    private final Queue<Packet> pendingPackets = new LinkedBlockingDeque<>();
+    private final PacketRegistry registry = new PacketRegistry();
     private Socket socket;
     private Thread readThread;
     private BufferedWriter writer;
-    private String host;
-    private int port;
+    private final String host;
+    private final int port;
 
-    public ClientConnector(String host, int port) {
+    public ClientConnector(final String host, final int port) {
         this.host = host;
         this.port = port;
     }
 
     /**
-     *
      * @throws Exception
      */
     public synchronized void connectAndStartReading() {
         try {
             this.socket = new Socket(this.host, this.port);
             this.writer = new BufferedWriter(new OutputStreamWriter(this.socket.getOutputStream()));
-        } catch (Exception ex) {
+        } catch (final Exception ex) {
             System.out.println("[ClientConnector] Could not bind to server.");
             ex.printStackTrace();
             return;
@@ -57,21 +54,21 @@ public class ClientConnector {
                         return;
                     }
 
-                    String[] split = data.split(":");
-                    String id = split[0];
-                    Optional<Packet> packetOptional = this.registry.fromId(id);
+                    final String[] split = data.split(":");
+                    final String id = split[0];
+                    final Optional<Packet> packetOptional = this.registry.fromId(id);
 
                     if (!packetOptional.isPresent()) {
                         System.out.println("[ClientConnector] Could not find packet with id " + id);
                         continue;
                     }
 
-                    Packet packet = packetOptional.get();
+                    final Packet packet = packetOptional.get();
                     packet.decode(split[1].split("|"));
 
                     this.pendingPackets.add(packet);
                 }
-            } catch (Exception ex) {
+            } catch (final Exception ex) {
                 ex.printStackTrace();
             }
         });
@@ -80,21 +77,19 @@ public class ClientConnector {
 
 
     /**
-     *
      * @param packet
      */
-    public synchronized void write(Packet packet) {
-        String data = packet.encode();
+    public synchronized void write(final Packet packet) {
+        final String data = packet.encode();
         try {
             this.writer.write(data);
-        } catch (IOException ex) {
+        } catch (final IOException ex) {
             System.out.println("[ClientConnector] Could not write packet.");
             ex.printStackTrace();
         }
     }
 
     /**
-     *
      * @throws IOException
      */
     public synchronized void disconnect() throws IOException {
