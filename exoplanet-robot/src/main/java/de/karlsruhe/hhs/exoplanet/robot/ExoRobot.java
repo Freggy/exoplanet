@@ -8,6 +8,7 @@ import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotLandedPacket;
 import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotMoveAndScanResponsePacket;
 import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotRotateResponsePacket;
 import de.karlsruhe.hhs.exoplanet.protocol.inbound.RobotScanResponsePacket;
+import java.net.InetSocketAddress;
 
 /**
  * @author Yannic Rieger
@@ -23,7 +24,7 @@ public class ExoRobot {
     private Thread planetThread;
     private final Thread stationThread;
 
-    public ExoRobot() {
+    public ExoRobot(final InetSocketAddress station, final InetSocketAddress planet) {
         this.planetThread = new Thread(() -> {
             while (!this.planetThread.isInterrupted()) {
                 final Packet received = this.planetConnector.getPendingPackets().poll();
@@ -56,10 +57,14 @@ public class ExoRobot {
     }
 
     public void start() {
-        this.planetConnector.connectAndStartReading();
+        //this.planetConnector.connectAndStartReading();
     }
 
     public void move(final Object direction) {
+
+    }
+
+    public void destroy() {
 
     }
 }
