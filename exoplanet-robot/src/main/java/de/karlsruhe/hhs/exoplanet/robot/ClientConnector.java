@@ -72,8 +72,14 @@ public class ClientConnector {
                         continue;
                     }
 
-                    final List<String> complete;
+                    final List<String> data = new ArrayList<>();
 
+                    // Add payloads to
+                    for (int i = 1; i < split.length - 1; i++) {
+                        data.add(split[i]);
+                    }
+
+                    /*
                     if (split.length > 2) {
                         // We need to have this edge case here because
                         // one payload is formatted as follows:
@@ -91,10 +97,10 @@ public class ClientConnector {
                         complete.addAll(Arrays.asList(split[2].split("\\|"))); // POSITION|x|y|direction
                     } else {
                         complete = Arrays.asList(split[1].split("\\|"));
-                    }
+                    }*/
 
                     final Packet packet = packetOptional.get();
-                    packet.decode(complete);
+                    packet.decode(data);
 
                     this.pendingPackets.add(packet);
                 }

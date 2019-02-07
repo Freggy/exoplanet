@@ -1,6 +1,8 @@
 package de.karlsruhe.hhs.exoplanet.robot;
 
 import de.karlsruhe.hhs.exoplanet.shared.Console;
+import de.karlsruhe.hhs.exoplanet.shared.FieldTile;
+import de.karlsruhe.hhs.exoplanet.shared.Size;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.InitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotCrashedPacket;
@@ -15,7 +17,7 @@ import java.net.InetSocketAddress;
  */
 public class ExoRobot {
 
-    private FieldTile[][] field;
+    private Size fieldSize;
     private FieldTile current;
 
     private final ClientConnector planetConnector;
@@ -37,8 +39,7 @@ public class ExoRobot {
                     final Packet received = this.planetConnector.getPendingPackets().take();
 
                     if (received instanceof InitPacket) {
-                        final InitPacket packet = (InitPacket) received;
-                        this.field = new FieldTile[packet.getHeight()][packet.getWidth()];
+                        this.fieldSize = ((InitPacket) received).getSize();
                     } else if (received instanceof RobotCrashedPacket) {
 
                     } else if (received instanceof RobotLandedPacket) {
