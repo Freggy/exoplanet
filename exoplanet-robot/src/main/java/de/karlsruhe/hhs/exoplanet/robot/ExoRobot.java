@@ -1,7 +1,6 @@
 package de.karlsruhe.hhs.exoplanet.robot;
 
 import de.karlsruhe.hhs.exoplanet.shared.Console;
-import de.karlsruhe.hhs.exoplanet.shared.network.ClientConnector;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.InitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotCrashedPacket;

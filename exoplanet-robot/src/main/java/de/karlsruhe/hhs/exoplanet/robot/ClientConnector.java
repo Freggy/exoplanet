@@ -1,4 +1,4 @@
-package de.karlsruhe.hhs.exoplanet.shared.network;
+package de.karlsruhe.hhs.exoplanet.robot;
 
 import de.karlsruhe.hhs.exoplanet.shared.Console;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
