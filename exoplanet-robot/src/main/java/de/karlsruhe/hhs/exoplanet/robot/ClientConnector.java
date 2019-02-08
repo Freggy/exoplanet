@@ -43,6 +43,11 @@ public class ClientConnector {
      *
      */
     public synchronized void connectAndStartReading() {
+        if (!this.socket.isClosed()) {
+            this.console.println("Socket already open.");
+            return;
+        }
+
         this.console.println("[ClientConnector] Connecting to " + this.address.getHostString() + ":" + this.address.getPort());
 
         try {
@@ -88,7 +93,6 @@ public class ClientConnector {
                     this.pendingPackets.add(packet);
                 }
             } catch (final Exception ex) {
-
                 ex.printStackTrace();
             }
 

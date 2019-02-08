@@ -76,7 +76,7 @@ public class ExoRobot {
 
                     }
                 } catch (final InterruptedException ex) {
-                    this.planetThread.interrupt();
+                    this.planetThread.interrupt(); // just in case
                 }
             }
         });
