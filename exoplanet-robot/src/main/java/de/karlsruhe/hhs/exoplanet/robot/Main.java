@@ -59,6 +59,27 @@ public class Main {
 
             if (instruction.startsWith("move ")) {
                 // TODO: move robot in dir
+            } else if (instruction.startsWith("land ")) {
+
+                if (robot.hasLanded()) {
+                    console.println("FEHLER: Roboter bereits gelandet.");
+                    continue;
+                }
+
+                final String[] parts = instruction.split(" ");
+
+                if (parts.length < 2) {
+                    console.println("FEHLER: land <x> <y>");
+                    continue;
+                }
+
+                try {
+                    final int x = Integer.valueOf(parts[1]);
+                    final int y = Integer.valueOf(parts[2]);
+                    robot.land(x, y);
+                } catch (final Exception ex) {
+                    console.println("FEHLER: Ungültige eingabe.");
+                }
             }
         }
     }

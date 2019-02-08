@@ -1,7 +1,7 @@
 package de.karlsruhe.hhs.exoplanet.robot;
 
 import de.karlsruhe.hhs.exoplanet.shared.Console;
-import de.karlsruhe.hhs.exoplanet.shared.FieldTile;
+import de.karlsruhe.hhs.exoplanet.shared.Position;
 import de.karlsruhe.hhs.exoplanet.shared.Size;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.InitPacket;
@@ -10,15 +10,27 @@ import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotLandedPac
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotMoveAndScanResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotRotateResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotScanResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotExitPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotLandPacket;
 import java.net.InetSocketAddress;
+import java.util.UUID;
 
 /**
  * @author Yannic Rieger
  */
 public class ExoRobot {
 
+    public boolean hasLanded() {
+        return this.hasLanded;
+    }
+
+    public UUID getId() {
+        return this.id;
+    }
+
     private Size fieldSize;
-    private FieldTile current;
+    private boolean hasLanded;
+    private Position currentPosition;
 
     private final ClientConnector planetConnector;
     private final ClientConnector stationConnector;
@@ -27,6 +39,8 @@ public class ExoRobot {
     private final Thread stationThread;
 
     private final Console console;
+
+    private final UUID id = UUID.randomUUID();
 
     public ExoRobot(final Console console, final InetSocketAddress station, final InetSocketAddress planet) {
         this.planetConnector = new ClientConnector(console, planet);
@@ -40,10 +54,16 @@ public class ExoRobot {
 
                     if (received instanceof InitPacket) {
                         this.fieldSize = ((InitPacket) received).getSize();
+                        this.console.println("[Robot] Planet size is:");
+                        this.console.println(" Max. Y: " + this.fieldSize.getHeight());
+                        this.console.println(" Max. X: " + this.fieldSize.getWidth());
                     } else if (received instanceof RobotCrashedPacket) {
-
+                        this.console.println("[Robot] Crashed");
                     } else if (received instanceof RobotLandedPacket) {
-
+                        final RobotLandedPacket packet = (RobotLandedPacket) received;
+                        this.console.println("[Robot] Robot landed!");
+                        this.console.println("[Robot] Data: " + packet.getMeasurement());
+                        this.hasLanded = true;
                     } else if (received instanceof RobotMoveAndScanResponsePacket) {
 
                     } else if (received instanceof RobotRotateResponsePacket) {
@@ -67,7 +87,7 @@ public class ExoRobot {
     }
 
     public void start() {
-        this.console.println("[ExoRobot] Starting...");
+        this.console.println("[ExoRobot] Starting. ID: " + this.id);
         this.planetConnector.connectAndStartReading();
         this.planetThread.start();
     }
@@ -76,7 +96,28 @@ public class ExoRobot {
 
     }
 
+    public void land(final int x, final int y) {
+        if (x < 0 || x > this.fieldSize.getWidth()) {
+            this.console.println("Eingabe für Width muss zwischen 0 und " + this.fieldSize.getWidth() + " liegen.");
+            return;
+        }
+
+        if (y < 0 || y > this.fieldSize.getHeight()) {
+            this.console.println("Eingabe für Width muss zwischen 0 und " + this.fieldSize.getHeight() + " liegen.");
+            return;
+        }
+
+        this.currentPosition = new Position(x, y);
+
+        final RobotLandPacket packet = new RobotLandPacket();
+        packet.setPosition(this.currentPosition);
+
+        this.planetConnector.write(packet);
+    }
+
     public void destroy() {
+        if (!this.hasLanded) return;
+        this.planetConnector.write(new RobotExitPacket());
         this.planetThread.interrupt();
         this.stationThread.interrupt();
         this.planetConnector.disconnect();

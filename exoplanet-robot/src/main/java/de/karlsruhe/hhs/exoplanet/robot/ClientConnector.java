@@ -56,12 +56,9 @@ public class ClientConnector {
 
         this.readThread = new Thread(() -> {
             try (final BufferedReader in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()))) {
-                String payload;
-                while ((payload = in.readLine()) != null) {
-                    if (this.readThread.isInterrupted()) {
-                        in.close();
-                        return;
-                    }
+                while (!this.readThread.isInterrupted()) {
+                    final String payload = in.readLine();
+                    if (payload == null) continue;
 
                     final String[] split = payload.split(":");
                     final String id = split[0];
@@ -72,32 +69,7 @@ public class ClientConnector {
                         continue;
                     }
 
-                    final List<String> data = new ArrayList<>();
-
-                    // Add payloads to
-                    for (int i = 1; i < split.length - 1; i++) {
-                        data.add(split[i]);
-                    }
-
-                    /*
-                    if (split.length > 2) {
-                        // We need to have this edge case here because
-                        // one payload is formatted as follows:
-                        // mvscaned:Measure|Ground|temp:POSITION|x|y|direction
-                        // so the normal way of splitting the string does not work.
-
-                        // After splitting it once our payload looks like this:
-                        // [0] = mvscanned
-                        // [1] = Measure|Ground|temp
-                        // [2] = POSITION|x|y|direction
-                        // So in order to retrieve the actual payload we have to split [1] and [2] at "|".
-
-                        complete = new ArrayList<>();
-                        complete.addAll(Arrays.asList(split[1].split("\\|"))); // Contains Measure|Ground|temp
-                        complete.addAll(Arrays.asList(split[2].split("\\|"))); // POSITION|x|y|direction
-                    } else {
-                        complete = Arrays.asList(split[1].split("\\|"));
-                    }*/
+                    final List<String> data = new ArrayList<>(Arrays.asList(split).subList(1, split.length));
 
                     final Packet packet = packetOptional.get();
                     packet.decode(data);
@@ -107,6 +79,7 @@ public class ClientConnector {
             } catch (final Exception ex) {
                 ex.printStackTrace();
             }
+
         });
         this.readThread.start();
     }
@@ -118,7 +91,8 @@ public class ClientConnector {
     public synchronized void write(final Packet packet) {
         final String data = packet.encode();
         try {
-            this.writer.write(data);
+            this.writer.write(data + "\n"); // Append \n because we need to send a new line after each payload
+            this.writer.flush();
         } catch (final IOException ex) {
             this.console.println("[ClientConnector] Could not write packet.");
             ex.printStackTrace();
@@ -132,9 +106,12 @@ public class ClientConnector {
     public synchronized void disconnect() {
         this.readThread.interrupt();
         try {
+            // Wait for thread to die, otherwise Exception is thrown because
+            // the reader tries to read from the closed socket.
+            this.readThread.join();
             this.writer.close();
             this.socket.close();
-        } catch (final IOException ex) {
+        } catch (final Exception ex) {
             ex.printStackTrace();
         }
     }

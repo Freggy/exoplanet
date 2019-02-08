@@ -27,10 +27,14 @@ public class Console {
 
     public void println(final Object msg) {
         // Workaround to keep prompt (see https://github.com/jline/jline3/issues/75)
-        this.reader.callWidget(LineReader.CLEAR);
-        this.reader.getTerminal().writer().println(msg);
-        this.reader.callWidget(LineReader.REDRAW_LINE);
-        this.reader.callWidget(LineReader.REDISPLAY);
-        this.reader.getTerminal().writer().flush();
+        if (this.reader.isReading()) {
+            this.reader.callWidget(LineReader.CLEAR);
+            this.reader.getTerminal().writer().println(msg);
+            this.reader.callWidget(LineReader.REDRAW_LINE);
+            this.reader.callWidget(LineReader.REDISPLAY);
+            this.reader.getTerminal().writer().flush();
+        } else {
+            this.reader.getTerminal().writer().println(msg);
+        }
     }
 }
