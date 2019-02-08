@@ -43,7 +43,7 @@ public class ClientConnector {
      *
      */
     public synchronized void connectAndStartReading() {
-        if (!this.socket.isClosed()) {
+        if (this.socket != null) {
             this.console.println("Socket already open.");
             return;
         }

@@ -1,6 +1,7 @@
 package de.karlsruhe.hhs.exoplanet.robot;
 
 import de.karlsruhe.hhs.exoplanet.shared.Console;
+import de.karlsruhe.hhs.exoplanet.shared.Direction;
 import de.karlsruhe.hhs.exoplanet.shared.Position;
 import de.karlsruhe.hhs.exoplanet.shared.Size;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
@@ -13,7 +14,9 @@ import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotScanRespo
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotExitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotLandPacket;
 import java.net.InetSocketAddress;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Yannic Rieger
@@ -43,7 +46,7 @@ public class ExoRobot {
     private final Thread stationThread;
 
     private final Console console;
-
+    private final Set<Position> robotPositionCache = ConcurrentHashMap.newKeySet();
     private final UUID id = UUID.randomUUID();
 
     public ExoRobot(final Console console, final InetSocketAddress station, final InetSocketAddress planet) {
@@ -96,8 +99,57 @@ public class ExoRobot {
         this.planetThread.start();
     }
 
-    public void move(final Object direction) {
+    public void move(final Direction direction) {
 
+        int newX = 0;
+        int newY = 0;
+
+        switch (direction) {
+            case EAST:
+                newX = this.moveOnPlane(false, this.currentPosition.getX(), this.fieldSize.getWidth());
+                break;
+
+            case WEST:
+                newX = this.moveOnPlane(true, this.currentPosition.getX(), this.fieldSize.getWidth());
+                break;
+
+            case NORTH:
+                newY = this.moveOnPlane(false, this.currentPosition.getY(), this.fieldSize.getHeight());
+                break;
+
+            case SOUTH:
+                newY = this.moveOnPlane(true, this.currentPosition.getY(), this.fieldSize.getHeight());
+                break;
+        }
+
+        if (newX == -1 || newY == -1) {
+            // TODO: error
+            return;
+        }
+
+        final Position newPos = new Position(
+            this.currentPosition.getX() + newX,
+            this.currentPosition.getY() + newY, this.currentPosition.getDir()
+        );
+
+        if (this.robotPositionCache.contains(newPos)) {
+            // TODO: error
+            return;
+        }
+
+        // TODO: send packet to station
+        // TODO: retrieve packet from station, it contains whether or not the robot can move
+        // TODO: send move packet to planet
+    }
+
+    private int moveOnPlane(final boolean subtract, final int oldVal, final int max) {
+        final int newVal = oldVal + (subtract ? -1 : 1);
+
+        if (newVal < 0 || newVal >= max) {
+            return -1;
+        }
+
+        return newVal;
     }
 
     public void land(final int x, final int y) {
