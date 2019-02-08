@@ -28,6 +28,10 @@ public class ExoRobot {
         return this.id;
     }
 
+    public Size getFieldSize() {
+        return this.fieldSize;
+    }
+
     private Size fieldSize;
     private boolean hasLanded;
     private Position currentPosition;
@@ -97,16 +101,6 @@ public class ExoRobot {
     }
 
     public void land(final int x, final int y) {
-        if (x < 0 || x >= this.fieldSize.getWidth()) {
-            this.console.println("Eingabe für Width muss zwischen 0 und " + (this.fieldSize.getWidth() - 1) + " liegen.");
-            return;
-        }
-
-        if (y < 0 || y >= this.fieldSize.getHeight()) {
-            this.console.println("Eingabe für Width muss zwischen 0 und " + (this.fieldSize.getHeight() - 1) + " liegen.");
-            return;
-        }
-
         this.currentPosition = new Position(x, y);
 
         final RobotLandPacket packet = new RobotLandPacket();

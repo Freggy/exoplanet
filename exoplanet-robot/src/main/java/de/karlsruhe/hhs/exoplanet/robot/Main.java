@@ -57,29 +57,13 @@ public class Main {
                 System.exit(0);
             }
 
-            if (instruction.startsWith("move ")) {
+            final String[] parts = instruction.split(" ");
+
+
+            if (parts[0].equalsIgnoreCase("move")) {
                 // TODO: move robot in dir
-            } else if (instruction.startsWith("land ")) {
-
-                if (robot.hasLanded()) {
-                    console.println("FEHLER: Roboter bereits gelandet.");
-                    continue;
-                }
-
-                final String[] parts = instruction.split(" ");
-
-                if (parts.length < 2) {
-                    console.println("FEHLER: land <x> <y>");
-                    continue;
-                }
-
-                try {
-                    final int x = Integer.valueOf(parts[1]);
-                    final int y = Integer.valueOf(parts[2]);
-                    robot.land(x, y);
-                } catch (final Exception ex) {
-                    console.println("FEHLER: Ungültige eingabe.");
-                }
+            } else if (parts[0].equalsIgnoreCase("land")) {
+                doLand(robot, console, parts);
             } else {
                 console.println("FEHLER: Nicht erkannter Befehl");
             }
@@ -88,5 +72,36 @@ public class Main {
 
     private static InetSocketAddress addressFromStringArray(final String[] data) {
         return new InetSocketAddress(data[0], Integer.valueOf(data[1]));
+    }
+
+    private static void doLand(final ExoRobot robot, final Console console, final String[] parts) {
+        if (robot.hasLanded()) {
+            console.println("FEHLER: Roboter bereits gelandet.");
+            return;
+        }
+
+        if (parts.length < 2) {
+            console.println("FEHLER: land <x> <y>");
+            return;
+        }
+
+        try {
+            final int x = Integer.valueOf(parts[1]);
+            final int y = Integer.valueOf(parts[2]);
+
+            if (x < 0 || x >= robot.getFieldSize().getWidth()) {
+                console.println("Eingabe für Width muss zwischen 0 und " + (robot.getFieldSize().getWidth() - 1) + " liegen.");
+                return;
+            }
+
+            if (y < 0 || y >= robot.getFieldSize().getHeight()) {
+                console.println("Eingabe für Width muss zwischen 0 und " + (robot.getFieldSize().getHeight() - 1) + " liegen.");
+                return;
+            }
+
+            robot.land(x, y);
+        } catch (final Exception ex) {
+            console.println("FEHLER: Ungültige eingabe.");
+        }
     }
 }
