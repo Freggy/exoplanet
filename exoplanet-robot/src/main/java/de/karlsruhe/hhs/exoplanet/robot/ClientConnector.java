@@ -47,6 +47,7 @@ public class ClientConnector {
 
         try {
             this.socket = new Socket(this.address.getHostName(), this.address.getPort());
+            this.socket.setSoTimeout(6000);
             this.writer = new BufferedWriter(new OutputStreamWriter(this.socket.getOutputStream()));
         } catch (final Exception ex) {
             this.console.println("[ClientConnector] Could not bind to server.");
@@ -57,7 +58,14 @@ public class ClientConnector {
         this.readThread = new Thread(() -> {
             try (final BufferedReader in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()))) {
                 while (!this.readThread.isInterrupted()) {
-                    final String payload = in.readLine();
+                    String payload;
+
+                    try {
+                        payload = in.readLine();
+                    } catch (final IOException ex) {
+                        payload = null;
+                    }
+
                     if (payload == null) continue;
 
                     final String[] split = payload.split(":");
@@ -77,6 +85,7 @@ public class ClientConnector {
                     this.pendingPackets.add(packet);
                 }
             } catch (final Exception ex) {
+
                 ex.printStackTrace();
             }
 

@@ -80,6 +80,8 @@ public class Main {
                 } catch (final Exception ex) {
                     console.println("FEHLER: Ungültige eingabe.");
                 }
+            } else {
+                console.println("FEHLER: Nicht erkannter Befehl");
             }
         }
     }
