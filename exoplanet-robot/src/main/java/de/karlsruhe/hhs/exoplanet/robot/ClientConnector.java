@@ -47,7 +47,7 @@ public class ClientConnector {
 
         try {
             this.socket = new Socket(this.address.getHostName(), this.address.getPort());
-            this.socket.setSoTimeout(6000);
+            this.socket.setSoTimeout(6000); // 6 seconds
             this.writer = new BufferedWriter(new OutputStreamWriter(this.socket.getOutputStream()));
         } catch (final Exception ex) {
             this.console.println("[ClientConnector] Could not bind to server.");
@@ -57,9 +57,13 @@ public class ClientConnector {
 
         this.readThread = new Thread(() -> {
             try (final BufferedReader in = new BufferedReader(new InputStreamReader(this.socket.getInputStream()))) {
+                String payload;
                 while (!this.readThread.isInterrupted()) {
-                    String payload;
-
+                    // The socket read-timeout we have set throws an exception if no
+                    // payload was received after the specified amount of time.
+                    // We have to do this because otherwise readLine() would block the thread until
+                    // a payload is received and we won't be able to interrupt the thread causing the program to
+                    // not be able to exit.
                     try {
                         payload = in.readLine();
                     } catch (final IOException ex) {
@@ -78,10 +82,9 @@ public class ClientConnector {
                     }
 
                     final List<String> data = new ArrayList<>(Arrays.asList(split).subList(1, split.length));
-
                     final Packet packet = packetOptional.get();
-                    packet.decode(data);
 
+                    packet.decode(data);
                     this.pendingPackets.add(packet);
                 }
             } catch (final Exception ex) {
@@ -107,7 +110,6 @@ public class ClientConnector {
             ex.printStackTrace();
         }
     }
-
 
     /**
      *
