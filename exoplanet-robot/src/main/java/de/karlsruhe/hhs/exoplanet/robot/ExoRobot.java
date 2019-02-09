@@ -4,19 +4,21 @@ import de.karlsruhe.hhs.exoplanet.shared.Console;
 import de.karlsruhe.hhs.exoplanet.shared.Direction;
 import de.karlsruhe.hhs.exoplanet.shared.Position;
 import de.karlsruhe.hhs.exoplanet.shared.Size;
+import de.karlsruhe.hhs.exoplanet.shared.network.SocketConsumer;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.InitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotCrashedPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotLandedPacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotMoveAndScanResponsePacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotRotateResponsePacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotScanResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotMoveResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotExitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotLandPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotMovePacket;
 import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Yannic Rieger
@@ -35,6 +37,10 @@ public class ExoRobot {
         return this.fieldSize;
     }
 
+    public Position getCurrentPosition() {
+        return this.currentPosition;
+    }
+
     private Size fieldSize;
     private boolean hasLanded;
     private Position currentPosition;
@@ -48,41 +54,40 @@ public class ExoRobot {
     private final Console console;
     private final Set<Position> robotPositionCache = ConcurrentHashMap.newKeySet();
     private final UUID id = UUID.randomUUID();
+    private final CyclicBarrier cyclicBarrier = new CyclicBarrier(2);
+
+    private final SocketConsumer consumer;
 
     public ExoRobot(final Console console, final InetSocketAddress station, final InetSocketAddress planet) {
         this.planetConnector = new ClientConnector(console, planet);
         this.stationConnector = new ClientConnector(console, station);
         this.console = console;
+        this.currentPosition = new Position(-1, -1);
 
-        this.planetThread = new Thread(() -> {
-            while (!this.planetThread.isInterrupted()) {
+        this.consumer = new SocketConsumer(this.planetConnector.getPendingPackets());
+
+        this.consumer.consume(InitPacket.class, packet -> {
+            this.fieldSize = packet.getSize();
+            this.console.println("[Robot] Planet size is:");
+            this.console.println(" Max. Y: " + this.fieldSize.getHeight());
+            this.console.println(" Max. X: " + this.fieldSize.getWidth());
+        })
+            .consume(RobotCrashedPacket.class, packet -> {
+                this.console.println("[Robot] Crashed");
+            })
+            .consume(RobotLandedPacket.class, packet -> {
+                this.console.println("[Robot] Robot landed!");
+                this.console.println("[Robot] Data: " + packet.getMeasurement());
+                this.hasLanded = true;
+            })
+            .consume(RobotMoveResponsePacket.class, packet -> {
+                this.currentPosition = packet.getPosition();
                 try {
-                    final Packet received = this.planetConnector.getPendingPackets().take();
-
-                    if (received instanceof InitPacket) {
-                        this.fieldSize = ((InitPacket) received).getSize();
-                        this.console.println("[Robot] Planet size is:");
-                        this.console.println(" Max. Y: " + this.fieldSize.getHeight());
-                        this.console.println(" Max. X: " + this.fieldSize.getWidth());
-                    } else if (received instanceof RobotCrashedPacket) {
-                        this.console.println("[Robot] Crashed");
-                    } else if (received instanceof RobotLandedPacket) {
-                        final RobotLandedPacket packet = (RobotLandedPacket) received;
-                        this.console.println("[Robot] Robot landed!");
-                        this.console.println("[Robot] Data: " + packet.getMeasurement());
-                        this.hasLanded = true;
-                    } else if (received instanceof RobotMoveAndScanResponsePacket) {
-
-                    } else if (received instanceof RobotRotateResponsePacket) {
-
-                    } else if (received instanceof RobotScanResponsePacket) {
-
-                    }
-                } catch (final InterruptedException ex) {
-                    this.planetThread.interrupt(); // just in case
+                    this.cyclicBarrier.await();
+                } catch (final BrokenBarrierException | InterruptedException e) {
+                    e.printStackTrace();
                 }
-            }
-        });
+            });
 
         this.stationThread = new Thread(() -> {
             while (!this.planetThread.isInterrupted()) {
@@ -96,15 +101,15 @@ public class ExoRobot {
     public void start() {
         this.console.println("[ExoRobot] Starting. ID: " + this.id);
         this.planetConnector.connectAndStartReading();
-        this.planetThread.start();
+        //this.planetThread.start();
+        this.consumer.start();
     }
 
-    public void move(final Direction direction) {
-
+    public void move() {
         int newX = 0;
         int newY = 0;
 
-        switch (direction) {
+        switch (this.currentPosition.getDir()) {
             case EAST:
                 newX = this.moveOnPlane(false, this.currentPosition.getX(), this.fieldSize.getWidth());
                 break;
@@ -114,16 +119,16 @@ public class ExoRobot {
                 break;
 
             case NORTH:
-                newY = this.moveOnPlane(false, this.currentPosition.getY(), this.fieldSize.getHeight());
+                newY = this.moveOnPlane(true, this.currentPosition.getY(), this.fieldSize.getHeight());
                 break;
 
             case SOUTH:
-                newY = this.moveOnPlane(true, this.currentPosition.getY(), this.fieldSize.getHeight());
+                newY = this.moveOnPlane(false, this.currentPosition.getY(), this.fieldSize.getHeight());
                 break;
         }
 
         if (newX == -1 || newY == -1) {
-            // TODO: error
+            this.console.println("[ExoRobot] FEHLER: Bewegung würde Spielfeld überschreiten.");
             return;
         }
 
@@ -133,9 +138,19 @@ public class ExoRobot {
         );
 
         if (this.robotPositionCache.contains(newPos)) {
-            // TODO: error
+            this.console.println("[ExoRobot] FEHLER: Bewegung würde Kollision verursachen.");
             return;
         }
+
+        this.planetConnector.write(new RobotMovePacket());
+
+        try {
+            this.cyclicBarrier.await();
+        } catch (final BrokenBarrierException | InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        this.cyclicBarrier.reset();
 
         // TODO: send packet to station
         // TODO: retrieve packet from station, it contains whether or not the robot can move
@@ -152,8 +167,8 @@ public class ExoRobot {
         return newVal;
     }
 
-    public void land(final int x, final int y) {
-        this.currentPosition = new Position(x, y);
+    public void land(final int x, final int y, final Direction direction) {
+        this.currentPosition = new Position(x, y, direction);
 
         final RobotLandPacket packet = new RobotLandPacket();
         packet.setPosition(this.currentPosition);

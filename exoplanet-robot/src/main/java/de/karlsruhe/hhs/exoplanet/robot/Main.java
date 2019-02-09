@@ -1,6 +1,7 @@
 package de.karlsruhe.hhs.exoplanet.robot;
 
 import de.karlsruhe.hhs.exoplanet.shared.Console;
+import de.karlsruhe.hhs.exoplanet.shared.Direction;
 import java.net.InetSocketAddress;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -49,7 +50,17 @@ public class Main {
         robot.start();
 
         while (true) {
-            final String instruction = console.getReader().readLine(">> ");
+
+            final StringBuilder builder = new StringBuilder();
+            builder.append("<<[");
+            builder.append(robot.getCurrentPosition().getX());
+            builder.append(",");
+            builder.append(robot.getCurrentPosition().getY());
+            builder.append(",");
+            builder.append(robot.getCurrentPosition().getDir());
+            builder.append("]>> ");
+
+            final String instruction = console.getReader().readLine(builder.toString());
 
             if (instruction.equalsIgnoreCase("exit")) {
                 console.println("Destroying ExoRobot...");
@@ -61,7 +72,7 @@ public class Main {
 
 
             if (parts[0].equalsIgnoreCase("move")) {
-                // TODO: move robot in dir
+                robot.move();
             } else if (parts[0].equalsIgnoreCase("land")) {
                 doLand(robot, console, parts);
             } else {
@@ -81,13 +92,14 @@ public class Main {
         }
 
         if (parts.length < 2) {
-            console.println("FEHLER: land <x> <y>");
+            console.println("FEHLER: land <x> <y> <dir>");
             return;
         }
 
         try {
             final int x = Integer.valueOf(parts[1]);
             final int y = Integer.valueOf(parts[2]);
+            final Direction direction = Direction.valueOf(parts[3].toUpperCase());
 
             if (x < 0 || x >= robot.getFieldSize().getWidth()) {
                 console.println("Eingabe für Width muss zwischen 0 und " + (robot.getFieldSize().getWidth() - 1) + " liegen.");
@@ -99,7 +111,7 @@ public class Main {
                 return;
             }
 
-            robot.land(x, y);
+            robot.land(x, y, direction);
         } catch (final Exception ex) {
             console.println("FEHLER: Ungültige eingabe.");
         }
