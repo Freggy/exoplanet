@@ -13,15 +13,19 @@ public class FieldBlockedRequestPacket implements Packet {
         return this.position;
     }
 
+    public void setPosition(final Position position) {
+        this.position = position;
+    }
+
     private Position position;
 
     @Override
     public String encode() {
-        return "fieldblockedrequest" + this.position.toString();
+        return "fieldblockedrequest:" + this.position.toString();
     }
 
     @Override
     public void decode(final List<String> data) {
-
+        this.position = Position.parse(data.get(0));
     }
 }

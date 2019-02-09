@@ -35,6 +35,7 @@ public class Console {
             this.reader.getTerminal().writer().flush();
         } else {
             this.reader.getTerminal().writer().println(msg);
+            this.reader.getTerminal().writer().flush();
         }
     }
 }

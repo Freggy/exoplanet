@@ -1,9 +1,9 @@
 package de.karlsruhe.hhs.exoplanet.station;
 
+import de.karlsruhe.hhs.exoplanet.shared.Console;
 import de.karlsruhe.hhs.exoplanet.shared.Measure;
 import de.karlsruhe.hhs.exoplanet.shared.Position;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Map;
@@ -23,6 +23,7 @@ public class ExoStation {
     private final Map<UUID, Position> positions;
     private final Map<Position, Measure> field;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private final Console console = new Console();
 
     public ExoStation(final int port) {
         this.connections = new ConcurrentHashMap<>();
@@ -30,7 +31,7 @@ public class ExoStation {
         this.field = new ConcurrentHashMap<>();
 
         try {
-            this.serverSocket = new ServerSocket(port, 10, Inet4Address.getByName("0.0.0.0"));
+            this.serverSocket = new ServerSocket(port);
             // TODO: probably have to set SO timeout as well
         } catch (final IOException e) {
             e.printStackTrace();
@@ -41,6 +42,7 @@ public class ExoStation {
                 try {
                     final Socket client = this.serverSocket.accept();
                     final UUID id = UUID.randomUUID();
+                    this.console.println("[ExoStation] New connection: " + id);
                     final RobotConnection connection = new RobotConnection(
                         this.executorService,
                         this.positions,
@@ -59,6 +61,7 @@ public class ExoStation {
 
     public void start() {
         this.acceptThread.start();
+        this.console.println("[ExoStation] Starting...");
     }
 
     public void shutdown() {

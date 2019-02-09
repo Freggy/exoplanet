@@ -20,7 +20,7 @@ public class FieldBlockedResponsePacket implements Packet {
 
     @Override
     public String encode() {
-        return Boolean.toString(this.isBlocked);
+        return "isblocked:" + this.isBlocked;
     }
 
     @Override

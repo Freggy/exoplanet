@@ -5,11 +5,13 @@ import de.karlsruhe.hhs.exoplanet.shared.Direction;
 import de.karlsruhe.hhs.exoplanet.shared.Position;
 import de.karlsruhe.hhs.exoplanet.shared.Size;
 import de.karlsruhe.hhs.exoplanet.shared.network.SocketConsumer;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.FieldBlockedResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.InitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotCrashedPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotLandedPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.StationInfoPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.FieldBlockedRequestPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotExitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotLandPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotMovePacket;
@@ -19,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Phaser;
 
 /**
  * @author Yannic Rieger
@@ -48,15 +51,17 @@ public class ExoRobot {
     private final ClientConnector planetConnector;
     private final ClientConnector stationConnector;
 
-    private Thread planetThread;
-    private final Thread stationThread;
-
     private final Console console;
     private final Set<Position> robotPositionCache = ConcurrentHashMap.newKeySet();
-    private final UUID id = UUID.randomUUID();
+    private UUID id;
     private final CyclicBarrier cyclicBarrier = new CyclicBarrier(2);
 
-    private final SocketConsumer consumer;
+    private final SocketConsumer planetConsumer;
+    private final SocketConsumer stationConsumer;
+
+    private volatile boolean isWayBlocked = false;
+
+    private Phaser phaser = new Phaser(1);
 
     public ExoRobot(final Console console, final InetSocketAddress station, final InetSocketAddress planet) {
         this.planetConnector = new ClientConnector(console, planet);
@@ -64,42 +69,51 @@ public class ExoRobot {
         this.console = console;
         this.currentPosition = new Position(-1, -1);
 
-        this.consumer = new SocketConsumer(this.planetConnector.getPendingPackets());
-
-        this.consumer.consume(InitPacket.class, packet -> {
+        this.planetConsumer = new SocketConsumer(this.planetConnector.getPendingPackets());
+        this.planetConsumer.consume(InitPacket.class, packet -> {
             this.fieldSize = packet.getSize();
-            this.console.println("[Robot] Planet size is:");
-            this.console.println(" Max. Y: " + this.fieldSize.getHeight());
-            this.console.println(" Max. X: " + this.fieldSize.getWidth());
+            this.console.println("[Robot] Größe des Planets: X: " + this.fieldSize.getWidth() + ", Y: " + this.fieldSize.getHeight());
         }).consume(RobotCrashedPacket.class, packet -> {
-            this.console.println("[Robot] Crashed");
+            this.console.println("[Robot] Crash");
         }).consume(RobotLandedPacket.class, packet -> {
-            this.console.println("[Robot] Robot landed!");
-            this.console.println("[Robot] Data: " + packet.getMeasurement());
+            this.console.println("[Robot] Gelandet!");
+            this.console.println("[Robot] Daten: " + packet.getMeasurement());
             this.hasLanded = true;
         }).consume(RobotMoveResponsePacket.class, packet -> {
             this.currentPosition = packet.getPosition();
+            this.phaser.arriveAndDeregister();
+        });
+
+        this.stationConsumer = new SocketConsumer(this.stationConnector.getPendingPackets());
+        this.stationConsumer.consume(FieldBlockedResponsePacket.class, packet -> {
+
+        }).consume(StationInfoPacket.class, packet -> {
+            this.id = packet.getUuid();
             try {
                 this.cyclicBarrier.await();
-            } catch (final BrokenBarrierException | InterruptedException e) {
+            } catch (final InterruptedException | BrokenBarrierException e) {
                 e.printStackTrace();
             }
+        }).consume(FieldBlockedResponsePacket.class, packet -> {
+            this.isWayBlocked = packet.isBlocked();
+            this.phaser.arriveAndDeregister();
         });
 
-        this.stationThread = new Thread(() -> {
-            while (!this.planetThread.isInterrupted()) {
-                final Packet received = this.stationConnector.getPendingPackets().poll();
-
-                // TODO: handle packets from station
-            }
-        });
     }
 
     public void start() {
-        this.console.println("[ExoRobot] Starting. ID: " + this.id);
         this.planetConnector.connectAndStartReading();
-        //this.planetThread.start();
-        this.consumer.start();
+        this.planetConsumer.start();
+
+        this.stationConnector.connectAndStartReading();
+        this.stationConsumer.start();
+
+        try {
+            this.cyclicBarrier.await();
+            this.console.println("[ExoRobot] Starten mit zugewiesener ID: " + this.id);
+        } catch (final InterruptedException | BrokenBarrierException e) {
+            e.printStackTrace();
+        }
     }
 
     public void move() {
@@ -139,19 +153,26 @@ public class ExoRobot {
             return;
         }
 
-        this.planetConnector.write(new RobotMovePacket());
+        final FieldBlockedRequestPacket blocked = new FieldBlockedRequestPacket();
+        blocked.setPosition(newPos);
 
-        try {
-            this.cyclicBarrier.await();
-        } catch (final BrokenBarrierException | InterruptedException e) {
-            e.printStackTrace();
+
+        this.phaser.register();
+        this.stationConnector.write(blocked);
+
+        this.phaser.arriveAndAwaitAdvance(); // Wait until the field blocked response has arrived
+
+        if (this.isWayBlocked) {
+            this.console.println("[ExoRobot] FEHLER: Bewegung würde Kollision verursachen.");
+            return;
         }
 
-        this.cyclicBarrier.reset();
+        this.phaser.register();
+        this.planetConnector.write(new RobotMovePacket());
 
-        // TODO: send packet to station
-        // TODO: retrieve packet from station, it contains whether or not the robot can move
-        // TODO: send move packet to planet
+        this.phaser.arriveAndAwaitAdvance(); // Wait until the move response packet has arrived
+        this.phaser.arriveAndDeregister();
+        this.phaser = new Phaser(1);
     }
 
     private int moveOnPlane(final boolean subtract, final int oldVal, final int max) {
@@ -176,9 +197,15 @@ public class ExoRobot {
     public void destroy() {
         if (!this.hasLanded) return;
         this.planetConnector.write(new RobotExitPacket());
-        this.planetThread.interrupt();
-        this.stationThread.interrupt();
+
+        try {
+            this.planetConsumer.shutdown();
+            this.stationConsumer.shutdown();
+        } catch (final InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        this.stationConnector.disconnect();
         this.planetConnector.disconnect();
-        //this.stationConnector.disconnect();
     }
 }
