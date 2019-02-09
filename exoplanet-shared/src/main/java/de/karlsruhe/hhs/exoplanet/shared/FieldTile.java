@@ -1,11 +1,23 @@
 package de.karlsruhe.hhs.exoplanet.shared;
 
-import de.karlsruhe.hhs.exoplanet.shared.Measure;
-
 /**
  * @author Yannic Rieger
  */
 public class FieldTile {
-    private boolean visited;
-    private Measure measurement;
+
+    private final Position position;
+    private final Measure measurement;
+
+    public FieldTile(final Position position, final Measure measurement) {
+        this.position = position;
+        this.measurement = measurement;
+    }
+
+    public Position getPosition() {
+        return this.position;
+    }
+
+    public Measure getMeasurement() {
+        return this.measurement;
+    }
 }

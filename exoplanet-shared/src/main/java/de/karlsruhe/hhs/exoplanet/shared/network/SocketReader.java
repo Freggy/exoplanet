@@ -67,4 +67,8 @@ public class SocketReader extends Thread {
         }
     }
 
+    public void shutdown() throws InterruptedException {
+        this.interrupt();
+        this.join(); // Wait for this thread to die
+    }
 }

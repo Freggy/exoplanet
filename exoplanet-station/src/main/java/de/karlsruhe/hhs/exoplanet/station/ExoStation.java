@@ -1,7 +1,7 @@
 package de.karlsruhe.hhs.exoplanet.station;
 
-import de.karlsruhe.hhs.exoplanet.shared.FieldTile;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
+import de.karlsruhe.hhs.exoplanet.shared.Measure;
+import de.karlsruhe.hhs.exoplanet.shared.Position;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.ServerSocket;
@@ -11,22 +11,23 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedTransferQueue;
 
 /**
  * @author Yannic Rieger
  */
 public class ExoStation {
 
-    private final LinkedTransferQueue<Packet> sharedQueue = new LinkedTransferQueue<>();
     private ServerSocket serverSocket;
     private Thread acceptThread;
     private final Map<UUID, RobotConnection> connections;
-    private FieldTile[][] field;
+    private final Map<UUID, Position> positions;
+    private final Map<Position, Measure> field;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public ExoStation(final int port) {
         this.connections = new ConcurrentHashMap<>();
+        this.positions = new ConcurrentHashMap<>();
+        this.field = new ConcurrentHashMap<>();
 
         try {
             this.serverSocket = new ServerSocket(port, 10, Inet4Address.getByName("0.0.0.0"));
@@ -40,9 +41,15 @@ public class ExoStation {
                 try {
                     final Socket client = this.serverSocket.accept();
                     final UUID id = UUID.randomUUID();
-                    //final RobotConnection connection = new RobotConnection(id, this.sharedQueue, client);
-                    //this.connections.put(id, connection);
-                    //connection.start();
+                    final RobotConnection connection = new RobotConnection(
+                        this.executorService,
+                        this.positions,
+                        this.field,
+                        id,
+                        client
+                    );
+                    this.connections.put(id, connection);
+                    connection.connect();
                 } catch (final IOException e) {
                     e.printStackTrace();
                 }
@@ -50,12 +57,12 @@ public class ExoStation {
         });
     }
 
-
     public void start() {
         this.acceptThread.start();
     }
 
     public void shutdown() {
+        this.connections.values().forEach(RobotConnection::close);
         this.acceptThread.interrupt();
         this.executorService.shutdown();
     }

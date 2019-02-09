@@ -6,13 +6,13 @@ import de.karlsruhe.hhs.exoplanet.shared.Position;
 import de.karlsruhe.hhs.exoplanet.shared.Size;
 import de.karlsruhe.hhs.exoplanet.shared.network.SocketConsumer;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.InitPacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotCrashedPacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotLandedPacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotMoveResponsePacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotExitPacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotLandPacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound.RobotMovePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.InitPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotCrashedPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotLandedPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotExitPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotLandPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotMovePacket;
 import java.net.InetSocketAddress;
 import java.util.Set;
 import java.util.UUID;
@@ -71,23 +71,20 @@ public class ExoRobot {
             this.console.println("[Robot] Planet size is:");
             this.console.println(" Max. Y: " + this.fieldSize.getHeight());
             this.console.println(" Max. X: " + this.fieldSize.getWidth());
-        })
-            .consume(RobotCrashedPacket.class, packet -> {
-                this.console.println("[Robot] Crashed");
-            })
-            .consume(RobotLandedPacket.class, packet -> {
-                this.console.println("[Robot] Robot landed!");
-                this.console.println("[Robot] Data: " + packet.getMeasurement());
-                this.hasLanded = true;
-            })
-            .consume(RobotMoveResponsePacket.class, packet -> {
-                this.currentPosition = packet.getPosition();
-                try {
-                    this.cyclicBarrier.await();
-                } catch (final BrokenBarrierException | InterruptedException e) {
-                    e.printStackTrace();
-                }
-            });
+        }).consume(RobotCrashedPacket.class, packet -> {
+            this.console.println("[Robot] Crashed");
+        }).consume(RobotLandedPacket.class, packet -> {
+            this.console.println("[Robot] Robot landed!");
+            this.console.println("[Robot] Data: " + packet.getMeasurement());
+            this.hasLanded = true;
+        }).consume(RobotMoveResponsePacket.class, packet -> {
+            this.currentPosition = packet.getPosition();
+            try {
+                this.cyclicBarrier.await();
+            } catch (final BrokenBarrierException | InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
 
         this.stationThread = new Thread(() -> {
             while (!this.planetThread.isInterrupted()) {

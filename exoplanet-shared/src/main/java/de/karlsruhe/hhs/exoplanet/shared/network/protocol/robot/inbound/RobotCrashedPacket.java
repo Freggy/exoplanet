@@ -1,4 +1,4 @@
-package de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound;
+package de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound;
 
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
 import java.util.List;
@@ -6,7 +6,7 @@ import java.util.List;
 /**
  * @author Yannic Rieger
  */
-public class RobotScanResponsePacket implements Packet {
+public class RobotCrashedPacket implements Packet {
 
     @Override
     public String encode() {

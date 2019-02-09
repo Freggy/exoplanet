@@ -1,12 +1,12 @@
 package de.karlsruhe.hhs.exoplanet.shared.network.protocol;
 
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.InitPacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotCrashedPacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotLandedPacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotMoveAndScanResponsePacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotMoveResponsePacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotRotateResponsePacket;
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound.RobotScanResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.InitPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotCrashedPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotLandedPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveAndScanResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotRotateResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotScanResponsePacket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;

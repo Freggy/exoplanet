@@ -1,4 +1,4 @@
-package de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound;
+package de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound;
 
 
 import de.karlsruhe.hhs.exoplanet.shared.Size;
@@ -11,7 +11,7 @@ import java.util.List;
 public class InitPacket implements Packet {
 
     public Size getSize() {
-        return size;
+        return this.size;
     }
 
     private Size size;

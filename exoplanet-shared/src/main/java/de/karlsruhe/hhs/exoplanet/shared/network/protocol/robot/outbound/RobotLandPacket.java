@@ -1,4 +1,4 @@
-package de.karlsruhe.hhs.exoplanet.shared.network.protocol.inbound;
+package de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound;
 
 import de.karlsruhe.hhs.exoplanet.shared.Position;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
@@ -7,21 +7,21 @@ import java.util.List;
 /**
  * @author Yannic Rieger
  */
-public class RobotMoveResponsePacket implements Packet {
+public class RobotLandPacket implements Packet {
 
-    public Position getPosition() {
-        return position;
+    public void setPosition(final Position position) {
+        this.position = position;
     }
 
     private Position position;
 
     @Override
     public String encode() {
-        return null;
+        return "land:" + this.position.toString();
     }
 
     @Override
     public void decode(final List<String> data) {
-        this.position = Position.parse(data.get(0));
+
     }
 }

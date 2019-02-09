@@ -1,4 +1,4 @@
-package de.karlsruhe.hhs.exoplanet.shared.network.protocol.outbound;
+package de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound;
 
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.Packet;
 import java.util.List;
@@ -6,11 +6,11 @@ import java.util.List;
 /**
  * @author Yannic Rieger
  */
-public class MeasurementPacket implements Packet {
+public class RobotExitPacket implements Packet {
 
     @Override
     public String encode() {
-        return null;
+        return "exit";
     }
 
     @Override
