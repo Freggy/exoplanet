@@ -23,12 +23,15 @@ public class ExoStation {
     private final Map<UUID, Position> positions;
     private final Map<Position, Measure> field;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private final Console console = new Console();
+    private final Console console;
+    private final DataAccess access;
 
-    public ExoStation(final int port) {
+    public ExoStation(final DataAccess access, final int port, final Console console) {
+        this.console = console;
         this.connections = new ConcurrentHashMap<>();
         this.positions = new ConcurrentHashMap<>();
         this.field = new ConcurrentHashMap<>();
+        this.access = access;
 
         try {
             this.serverSocket = new ServerSocket(port);
@@ -63,12 +66,14 @@ public class ExoStation {
     }
 
     public void start() {
-        this.acceptThread.start();
         this.console.println("[ExoStation] Starting...");
+        this.access.connect();
+        this.acceptThread.start();
     }
 
     public void shutdown() {
         this.connections.values().forEach(RobotConnection::close);
+        this.access.close();
         this.acceptThread.interrupt();
         this.executorService.shutdown();
     }

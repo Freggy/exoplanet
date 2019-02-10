@@ -35,6 +35,7 @@ public class RobotConnection {
     private final Map<Position, Measure> field;
     private final Console console;
     private final Map<UUID, RobotConnection> connections;
+    private final DataAccess access;
 
     public RobotConnection(
         final Console console,
@@ -43,12 +44,15 @@ public class RobotConnection {
         final Map<Position, Measure> field,
         final Map<UUID, RobotConnection> connections,
         final UUID id,
+        final DataAccess access,
         final Socket socket
     ) {
         this.console = console;
         this.connections = connections;
         this.id = id;
         this.socket = socket;
+        this.access = access;
+
         final TransferQueue<Packet> packets = new LinkedTransferQueue<>();
         this.reader = new SocketReader(null, socket, packets);
         this.consumer = new SocketConsumer(packets);
@@ -88,8 +92,9 @@ public class RobotConnection {
         });
 
         this.consumer.consume(MeasurementPacket.class, packet -> {
+            // TODO: explain why executor service
             this.executorService.submit(() -> {
-                // TODO: write to database
+                this.access.writeData(packet.getMeasurement(), packet.getPosition());
             });
         }).consume(RobotPositionUpdatePacket.class, packet -> {
             this.console.println("[ExoStation] Robot " + packet.getRobotId().toString() + " changed Position to " + packet.getPosition());

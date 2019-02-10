@@ -1,63 +1,77 @@
 package de.karlsruhe.hhs.exoplanet.station;
 
-import java.util.concurrent.Phaser;
+import de.karlsruhe.hhs.exoplanet.shared.Console;
+import de.karlsruhe.hhs.exoplanet.shared.StartupOptions;
+import org.apache.commons.cli.Option;
 
 /**
  * @author Yannic Rieger
  */
 public class Main {
 
-    static private final Phaser phaser = new Phaser(1);
-
-    static Thread thread1;
-
-    static Thread thread2;
-
-
     public static void main(final String[] args) {
-        final ExoStation station = new ExoStation(4444);
+        final Option portOption = new Option("p", "port", true, "Port: 0 - 65535");
+        portOption.setRequired(true);
+
+
+        final Option data = new Option("d", "database", true, "<hostname>:<port>,<user>,<password>,<database>");
+        data.setRequired(true);
+
+
+        StartupOptions.register(portOption);
+        StartupOptions.parse("ExoStation", args);
+
+        final DataAccess access = createDataAccess(StartupOptions.getCmd().getOptionValue("port").split(","));
+
+        if (access == null) {
+            System.out.println("Ungültige Verbindungsinformationen.");
+            return;
+        }
+
+        final int port = Integer.valueOf(StartupOptions.getCmd().getOptionValue("port"));
+
+        if (port < 0 || port > 65535) {
+            System.out.println("Ungültiger Port. Port muss sich zwischen 0 und 65535 befinden.");
+            return;
+        }
+
+        final Console console = new Console();
+
+        final ExoStation station = new ExoStation(access, port, console);
         station.start();
-        /*
+
         while (true) {
+            final String instruction = console.getReader().readLine("> ");
 
-            phaser = new Phaser(1);
+            if (instruction.equalsIgnoreCase("exit")) {
+                console.println("Herunterfahren...");
+                station.shutdown();
+                System.exit(0);
+            }
+        }
+    }
 
-            thread2 = new Thread(() -> {
-                try {
-                    Thread.currentThread().sleep(3000);
-                } catch (final InterruptedException e) {
-                    e.printStackTrace();
-                }
+    private static DataAccess createDataAccess(final String[] connectionInfo) {
+        if (connectionInfo.length < 4) {
+            return null;
+        }
 
-                System.out.println("2");
-                phaser.arriveAndDeregister();
-            });
+        final String[] host = connectionInfo[0].split(":");
 
-            thread1 = new Thread(() -> {
-                try {
-                    Thread.currentThread().sleep(2000);
-                } catch (final InterruptedException e) {
-                    e.printStackTrace();
-                }
-                System.out.println("1");
-                phaser.arriveAndDeregister();
-            });
+        if (host.length < 2) {
+            return null;
+        }
 
-
-            System.out.println("TEIL 1");
-            thread1.start();
-            phaser.register();
-            phaser.arriveAndAwaitAdvance();
-
-            System.out.println("TEIL 2");
-            phaser.register();
-            thread2.start();
-
-            phaser.arriveAndAwaitAdvance();
-
-
-            System.out.println("TEIL 3 DERIGSTER");
-            phaser.arriveAndDeregister();
-        }*/
+        try {
+            final String hostname = host[0];
+            final int port = Integer.valueOf(host[1]);
+            final String user = connectionInfo[1];
+            final String password = connectionInfo[2];
+            final String database = connectionInfo[3];
+            return new DataAccess(hostname, port, database, user, password);
+        } catch (final Exception ex) {
+            ex.printStackTrace();
+        }
+        return null;
     }
 }

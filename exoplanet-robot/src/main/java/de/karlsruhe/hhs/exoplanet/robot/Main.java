@@ -3,14 +3,9 @@ package de.karlsruhe.hhs.exoplanet.robot;
 import de.karlsruhe.hhs.exoplanet.shared.Console;
 import de.karlsruhe.hhs.exoplanet.shared.Direction;
 import de.karlsruhe.hhs.exoplanet.shared.Rotation;
+import de.karlsruhe.hhs.exoplanet.shared.StartupOptions;
 import java.net.InetSocketAddress;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 
 /**
  * @author Yannic Rieger
@@ -19,6 +14,7 @@ public class Main {
 
     public static void main(final String[] args) {
 
+        /*
         final Options options = new Options();
 
         final Option planet = new Option("p", "planet", true, "<hostname>:<port>");
@@ -38,14 +34,24 @@ public class Main {
         } catch (final ParseException e) {
             formatter.printHelp("ExoRobot", options);
             return;
-        }
+        }*/
+
+
+        final Option planet = new Option("p", "planet", true, "<hostname>:<port>");
+        planet.setRequired(true);
+
+        final Option station = new Option("s", "station", true, "<hostname>:<port>");
+        station.setRequired(true);
+
+        StartupOptions.register(planet, station);
+        StartupOptions.parse("ExoRobot", args);
 
         final Console console = new Console();
 
         final ExoRobot robot = new ExoRobot(
             console,
-            addressFromStringArray(cmd.getOptionValue("station").split(":")),
-            addressFromStringArray(cmd.getOptionValue("planet").split(":"))
+            addressFromStringArray(StartupOptions.getCmd().getOptionValue("station").split(":")),
+            addressFromStringArray(StartupOptions.getCmd().getOptionValue("planet").split(":"))
         );
 
         robot.start();
