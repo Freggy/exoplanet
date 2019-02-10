@@ -18,16 +18,20 @@ public class RobotPositionUpdatePacket implements Packet {
         return this.position;
     }
 
+    public void setRobotId(final UUID robotId) {
+        this.robotId = robotId;
+    }
+
+    public void setPosition(final Position position) {
+        this.position = position;
+    }
+
     private UUID robotId;
     private Position position;
 
     @Override
     public String encode() {
-        return "ID" +
-            "|" +
-            this.robotId.toString() +
-            ":" +
-            this.position.toString();
+        return "posupdate:" + this.robotId.toString() + ":" + this.position.toString();
     }
 
     @Override

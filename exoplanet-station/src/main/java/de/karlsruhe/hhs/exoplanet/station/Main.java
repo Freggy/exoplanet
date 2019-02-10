@@ -15,8 +15,8 @@ public class Main {
 
 
     public static void main(final String[] args) {
-
-
+        final ExoStation station = new ExoStation(4444);
+        station.start();
         /*
         while (true) {
 

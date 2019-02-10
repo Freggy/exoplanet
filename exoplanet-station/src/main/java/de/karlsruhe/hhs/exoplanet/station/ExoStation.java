@@ -32,7 +32,7 @@ public class ExoStation {
 
         try {
             this.serverSocket = new ServerSocket(port);
-            // TODO: probably have to set SO timeout as well
+            // TODO: maybe set read-timeout
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -41,12 +41,15 @@ public class ExoStation {
             while (!this.acceptThread.isInterrupted()) {
                 try {
                     final Socket client = this.serverSocket.accept();
+                    client.setSoTimeout(6000);
                     final UUID id = UUID.randomUUID();
                     this.console.println("[ExoStation] New connection: " + id);
                     final RobotConnection connection = new RobotConnection(
+                        this.console,
                         this.executorService,
                         this.positions,
                         this.field,
+                        this.connections,
                         id,
                         client
                     );

@@ -1,6 +1,6 @@
 package de.karlsruhe.hhs.exoplanet.shared.network.protocol;
 
-import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.FieldBlockedResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.bidirectional.RobotPositionUpdatePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.InitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotCrashedPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotLandedPacket;
@@ -9,6 +9,8 @@ import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMov
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotRotateResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotScanResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.StationInfoPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.InfoRobotExitPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.MeasurementPacket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +31,9 @@ public class PacketRegistry {
         this.packets.put("rotated", RobotRotateResponsePacket.class);
         this.packets.put("crashed", RobotCrashedPacket.class);
         this.packets.put("info", StationInfoPacket.class);
-        this.packets.put("isblocked", FieldBlockedResponsePacket.class);
+        this.packets.put("measure", MeasurementPacket.class);
+        this.packets.put("infoexit", InfoRobotExitPacket.class);
+        this.packets.put("posupdate", RobotPositionUpdatePacket.class);
     }
 
     public Optional<Packet> fromId(final String id) {

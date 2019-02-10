@@ -31,11 +31,12 @@ public class MeasurementPacket implements Packet {
 
     @Override
     public String encode() {
-        return null;
+        return "measure:" + this.measurement.toString() + ":" + this.getPosition();
     }
 
     @Override
     public void decode(final List<String> data) {
-
+        this.measurement = Measure.parse(data.get(0));
+        this.position = Position.parse(data.get(1));
     }
 }
