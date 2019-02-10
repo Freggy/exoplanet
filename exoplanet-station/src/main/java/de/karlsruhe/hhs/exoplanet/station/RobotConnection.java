@@ -77,6 +77,16 @@ public class RobotConnection {
         infoPacket.setUuid(this.id);
         this.write(infoPacket);
 
+        // Send the newly connected robot all the positions
+        this.positions.forEach((id, pos) -> {
+            if (!id.equals(this.id)) {
+                final RobotPositionUpdatePacket updatePacket = new RobotPositionUpdatePacket();
+                updatePacket.setRobotId(id);
+                updatePacket.setPosition(pos);
+                this.write(updatePacket);
+            }
+        });
+
         this.consumer.consume(MeasurementPacket.class, packet -> {
             this.executorService.submit(() -> {
                 // TODO: write to database

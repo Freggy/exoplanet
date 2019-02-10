@@ -9,12 +9,14 @@ import de.karlsruhe.hhs.exoplanet.shared.network.protocol.bidirectional.RobotPos
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.InitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotCrashedPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotLandedPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveAndScanResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.StationInfoPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.InfoRobotExitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.MeasurementPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotExitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotLandPacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotMoveAndScanPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotMovePacket;
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -95,6 +97,19 @@ public class ExoRobot {
             } catch (final InterruptedException | BrokenBarrierException e) {
                 e.printStackTrace();
             }
+        }).consume(RobotMoveAndScanResponsePacket.class, packet -> {
+            this.currentPosition = packet.getPosition();
+
+            final MeasurementPacket measurementPacket = new MeasurementPacket();
+            measurementPacket.setMeasurement(packet.getMeasurement());
+            measurementPacket.setPosition(this.currentPosition);
+            this.stationConnector.write(measurementPacket);
+
+            try {
+                this.cyclicBarrier.await();
+            } catch (final InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
+            }
         });
 
         this.stationConsumer = new SocketConsumer(this.stationConnector.getPendingPackets());
@@ -128,7 +143,7 @@ public class ExoRobot {
         }
     }
 
-    public void move() {
+    public void move(final boolean moveAndScan) {
         int newX = 0;
         int newY = 0;
 
@@ -163,7 +178,9 @@ public class ExoRobot {
             return;
         }
 
-        this.planetConnector.write(new RobotMovePacket());
+        if (moveAndScan) {
+            this.planetConnector.write(new RobotMoveAndScanPacket());
+        } else this.planetConnector.write(new RobotMovePacket());
 
         try {
             this.cyclicBarrier.await();

@@ -52,13 +52,13 @@ public class Main {
         while (true) {
 
             final StringBuilder builder = new StringBuilder();
-            builder.append("<<[");
+            builder.append("[");
             builder.append(robot.getCurrentPosition().getX());
             builder.append(",");
             builder.append(robot.getCurrentPosition().getY());
             builder.append(",");
             builder.append(robot.getCurrentPosition().getDir());
-            builder.append("]>> ");
+            builder.append("] > ");
 
             final String instruction = console.getReader().readLine(builder.toString());
 
@@ -70,9 +70,10 @@ public class Main {
 
             final String[] parts = instruction.split(" ");
 
-
             if (parts[0].equalsIgnoreCase("move")) {
-                robot.move();
+                robot.move(false);
+            } else if (parts[0].equalsIgnoreCase("mvscan")) {
+                robot.move(true);
             } else if (parts[0].equalsIgnoreCase("land")) {
                 doLand(robot, console, parts);
             } else {
