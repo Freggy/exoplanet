@@ -3,6 +3,7 @@ package de.karlsruhe.hhs.exoplanet.robot;
 import de.karlsruhe.hhs.exoplanet.shared.Console;
 import de.karlsruhe.hhs.exoplanet.shared.Direction;
 import de.karlsruhe.hhs.exoplanet.shared.Position;
+import de.karlsruhe.hhs.exoplanet.shared.Rotation;
 import de.karlsruhe.hhs.exoplanet.shared.Size;
 import de.karlsruhe.hhs.exoplanet.shared.network.SocketConsumer;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.bidirectional.RobotPositionUpdatePacket;
@@ -11,6 +12,7 @@ import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotCra
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotLandedPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveAndScanResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotRotateResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.StationInfoPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.InfoRobotExitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.MeasurementPacket;
@@ -18,6 +20,7 @@ import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotEx
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotLandPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotMoveAndScanPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotMovePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotRotatePacket;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.UUID;
@@ -105,6 +108,13 @@ public class ExoRobot {
             measurementPacket.setPosition(this.currentPosition);
             this.stationConnector.write(measurementPacket);
 
+            try {
+                this.cyclicBarrier.await();
+            } catch (final InterruptedException | BrokenBarrierException e) {
+                e.printStackTrace();
+            }
+        }).consume(RobotRotateResponsePacket.class, packet -> {
+            this.currentPosition.setDir(packet.getDirection());
             try {
                 this.cyclicBarrier.await();
             } catch (final InterruptedException | BrokenBarrierException e) {
@@ -218,7 +228,19 @@ public class ExoRobot {
         updatePacket.setPosition(this.currentPosition);
         updatePacket.setRobotId(this.id);
         this.stationConnector.write(updatePacket);
+    }
 
+    public void rotate(final Rotation rotation) {
+        final RobotRotatePacket packet = new RobotRotatePacket();
+        packet.setRotation(rotation);
+        this.planetConnector.write(packet);
+
+        try {
+            this.cyclicBarrier.await();
+            this.cyclicBarrier.reset();
+        } catch (final InterruptedException | BrokenBarrierException e) {
+            e.printStackTrace();
+        }
     }
 
     public void destroy() {

@@ -2,6 +2,7 @@ package de.karlsruhe.hhs.exoplanet.robot;
 
 import de.karlsruhe.hhs.exoplanet.shared.Console;
 import de.karlsruhe.hhs.exoplanet.shared.Direction;
+import de.karlsruhe.hhs.exoplanet.shared.Rotation;
 import java.net.InetSocketAddress;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -71,11 +72,21 @@ public class Main {
             final String[] parts = instruction.split(" ");
 
             if (parts[0].equalsIgnoreCase("move")) {
+                if (!robot.hasLanded()) {
+                    console.println("FEHLER: Roboter ist noch nicht gelandet.");
+                    return;
+                }
                 robot.move(false);
             } else if (parts[0].equalsIgnoreCase("mvscan")) {
+                if (!robot.hasLanded()) {
+                    console.println("FEHLER: Roboter ist noch nicht gelandet.");
+                    return;
+                }
                 robot.move(true);
             } else if (parts[0].equalsIgnoreCase("land")) {
                 doLand(robot, console, parts);
+            } else if (parts[0].equalsIgnoreCase("rotate")) {
+                doRotate(robot, console, parts);
             } else {
                 console.println("FEHLER: Nicht erkannter Befehl");
             }
@@ -84,6 +95,26 @@ public class Main {
 
     private static InetSocketAddress addressFromStringArray(final String[] data) {
         return new InetSocketAddress(data[0], Integer.valueOf(data[1]));
+    }
+
+
+    private static void doRotate(final ExoRobot robot, final Console console, final String[] parts) {
+        if (parts.length < 2) {
+            console.println("FEHLER: rotate <left|right>");
+            return;
+        }
+
+        if (!robot.hasLanded()) {
+            console.println("FEHLER: Roboter ist noch nicht gelandet.");
+            return;
+        }
+
+        try {
+            final Rotation rotation = Rotation.valueOf(parts[1].toUpperCase());
+            robot.rotate(rotation);
+        } catch (final Exception ex) {
+            console.println("FEHLER: Ungültige eingabe.");
+        }
     }
 
     private static void doLand(final ExoRobot robot, final Console console, final String[] parts) {
