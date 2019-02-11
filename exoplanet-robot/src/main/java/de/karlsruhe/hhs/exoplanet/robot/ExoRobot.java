@@ -64,7 +64,7 @@ public class ExoRobot {
 
     private volatile UUID id;
 
-    private final SilentCycliclBarrier cyclicBarrier = new SilentCycliclBarrier(2);
+    private final SilentCyclicBarrier cyclicBarrier = new SilentCyclicBarrier(2);
 
     public ExoRobot(final Console console, final InetSocketAddress station, final InetSocketAddress planet) {
         this.planetConnector = new ClientConnector(console, planet);
