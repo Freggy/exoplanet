@@ -243,6 +243,10 @@ public class ExoRobot {
         }
     }
 
+    private void scan() {
+
+    }
+
     public void destroy() {
         if (!this.hasLanded) return;
         this.planetConnector.write(new RobotExitPacket());

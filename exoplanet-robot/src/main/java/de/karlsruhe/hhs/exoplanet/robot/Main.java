@@ -13,30 +13,6 @@ import org.apache.commons.cli.Option;
 public class Main {
 
     public static void main(final String[] args) {
-
-        /*
-        final Options options = new Options();
-
-        final Option planet = new Option("p", "planet", true, "<hostname>:<port>");
-        planet.setRequired(true);
-        options.addOption(planet);
-
-        final Option station = new Option("s", "station", true, "<hostname>:<port>");
-        station.setRequired(true);
-        options.addOption(station);
-
-        final CommandLineParser parser = new DefaultParser();
-        final HelpFormatter formatter = new HelpFormatter();
-        final CommandLine cmd;
-
-        try {
-            cmd = parser.parse(options, args);
-        } catch (final ParseException e) {
-            formatter.printHelp("ExoRobot", options);
-            return;
-        }*/
-
-
         final Option planet = new Option("p", "planet", true, "<hostname>:<port>");
         planet.setRequired(true);
 
@@ -56,8 +32,11 @@ public class Main {
 
         robot.start();
 
-        while (true) {
+        // TODO: comment
+        // TODO: output fancify output
+        // TODO: feature test
 
+        while (true) {
             final StringBuilder builder = new StringBuilder();
             builder.append("[");
             builder.append(robot.getCurrentPosition().getX());

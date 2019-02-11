@@ -93,6 +93,8 @@ public class RobotConnection {
 
         this.consumer.consume(MeasurementPacket.class, packet -> {
             // TODO: explain why executor service
+            this.console.println("[ExoStation] Measurement data at " + packet.getPosition() + ": " + packet.getMeasurement());
+            this.field.put(packet.getPosition(), packet.getMeasurement());
             this.executorService.submit(() -> {
                 this.access.writeData(packet.getMeasurement(), packet.getPosition());
             });
@@ -106,9 +108,6 @@ public class RobotConnection {
                     conn.write(packet);
                 }
             });
-        }).consume(MeasurementPacket.class, packet -> {
-            this.console.println("[ExoStation] Measurement data at " + packet.getPosition() + ": " + packet.getMeasurement());
-            this.field.put(packet.getPosition(), packet.getMeasurement());
         }).consume(InfoRobotExitPacket.class, packet -> {
             this.console.println("[ExoStation] Robot " + packet.getRobotId() + " exited with cause " + packet.getCause());
             this.positions.remove(packet.getRobotId());

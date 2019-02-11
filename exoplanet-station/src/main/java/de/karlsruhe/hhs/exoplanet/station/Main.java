@@ -18,10 +18,10 @@ public class Main {
         data.setRequired(true);
 
 
-        StartupOptions.register(portOption);
+        StartupOptions.register(portOption, data);
         StartupOptions.parse("ExoStation", args);
 
-        final DataAccess access = createDataAccess(StartupOptions.getCmd().getOptionValue("port").split(","));
+        final DataAccess access = createDataAccess(StartupOptions.getCmd().getOptionValue("database").split(","));
 
         if (access == null) {
             System.out.println("Ungültige Verbindungsinformationen.");

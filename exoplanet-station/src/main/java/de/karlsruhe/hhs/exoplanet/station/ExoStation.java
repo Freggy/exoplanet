@@ -54,6 +54,7 @@ public class ExoStation {
                         this.field,
                         this.connections,
                         id,
+                        this.access,
                         client
                     );
                     this.connections.put(id, connection);
