@@ -93,6 +93,7 @@ public class ExoRobot {
             this.stationConnector.write(measurementPacket);
 
             this.hasLanded = true;
+            this.cyclicBarrier.await();
         }).consume(RobotMoveResponsePacket.class, packet -> {
             this.currentPosition = packet.getPosition();
             this.cyclicBarrier.await();
@@ -209,6 +210,7 @@ public class ExoRobot {
         updatePacket.setPosition(this.currentPosition);
         updatePacket.setRobotId(this.id);
         this.stationConnector.write(updatePacket);
+        this.cyclicBarrier.awaitThenReset();
     }
 
     public void rotate(final Rotation rotation) {
