@@ -13,6 +13,7 @@ import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotLan
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveAndScanResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotMoveResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotRotateResponsePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.RobotScanResponsePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.inbound.StationInfoPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.InfoRobotExitPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.MeasurementPacket;
@@ -21,12 +22,11 @@ import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotLa
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotMoveAndScanPacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotMovePacket;
 import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotRotatePacket;
+import de.karlsruhe.hhs.exoplanet.shared.network.protocol.robot.outbound.RobotScanPacket;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Yannic Rieger
@@ -64,7 +64,7 @@ public class ExoRobot {
 
     private volatile UUID id;
 
-    private final CyclicBarrier cyclicBarrier = new CyclicBarrier(2);
+    private final SilentCycliclBarrier cyclicBarrier = new SilentCycliclBarrier(2);
 
     public ExoRobot(final Console console, final InetSocketAddress station, final InetSocketAddress planet) {
         this.planetConnector = new ClientConnector(console, planet);
@@ -95,11 +95,7 @@ public class ExoRobot {
             this.hasLanded = true;
         }).consume(RobotMoveResponsePacket.class, packet -> {
             this.currentPosition = packet.getPosition();
-            try {
-                this.cyclicBarrier.await();
-            } catch (final InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
-            }
+            this.cyclicBarrier.await();
         }).consume(RobotMoveAndScanResponsePacket.class, packet -> {
             this.currentPosition = packet.getPosition();
 
@@ -107,30 +103,23 @@ public class ExoRobot {
             measurementPacket.setMeasurement(packet.getMeasurement());
             measurementPacket.setPosition(this.currentPosition);
             this.stationConnector.write(measurementPacket);
-
-            try {
-                this.cyclicBarrier.await();
-            } catch (final InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
-            }
+            this.cyclicBarrier.await();
         }).consume(RobotRotateResponsePacket.class, packet -> {
             this.currentPosition.setDir(packet.getDirection());
-            try {
-                this.cyclicBarrier.await();
-            } catch (final InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
-            }
+            this.cyclicBarrier.await();
+        }).consume(RobotScanResponsePacket.class, packet -> {
+            this.console.println("[ExoRobot] Daten: " + packet.getMeasurement());
+            final MeasurementPacket measurementPacket = new MeasurementPacket();
+            measurementPacket.setMeasurement(packet.getMeasurement());
+            measurementPacket.setPosition(this.currentPosition);
+            this.stationConnector.write(measurementPacket);
+            this.cyclicBarrier.await();
         });
 
         this.stationConsumer = new SocketConsumer(this.stationConnector.getPendingPackets());
         this.stationConsumer.consume(StationInfoPacket.class, packet -> {
             this.id = packet.getUuid();
-            try {
-                this.cyclicBarrier.await();
-                this.cyclicBarrier.reset();
-            } catch (final InterruptedException | BrokenBarrierException e) {
-                e.printStackTrace();
-            }
+            this.cyclicBarrier.awaitThenReset();
         }).consume(RobotPositionUpdatePacket.class, packet -> {
             this.console.println("[ExoRobot] Updated position of " + packet.getRobotId() + " to " + packet.getPosition());
             this.robotPositionCache.put(packet.getRobotId(), packet.getPosition());
@@ -145,12 +134,9 @@ public class ExoRobot {
         this.stationConnector.connectAndStartReading();
         this.stationConsumer.start();
 
-        try {
-            this.cyclicBarrier.await();
-            this.console.println("[ExoRobot] Starten mit zugewiesener ID: " + this.id);
-        } catch (final InterruptedException | BrokenBarrierException e) {
-            e.printStackTrace();
-        }
+
+        this.cyclicBarrier.await();
+        this.console.println("[ExoRobot] Starten mit zugewiesener ID: " + this.id);
     }
 
     public void move(final boolean moveAndScan) {
@@ -192,12 +178,7 @@ public class ExoRobot {
             this.planetConnector.write(new RobotMoveAndScanPacket());
         } else this.planetConnector.write(new RobotMovePacket());
 
-        try {
-            this.cyclicBarrier.await();
-            this.cyclicBarrier.reset();
-        } catch (final InterruptedException | BrokenBarrierException e) {
-            e.printStackTrace();
-        }
+        this.cyclicBarrier.awaitThenReset();
     }
 
     private int moveOnPlane(final boolean subtract, final int oldVal, final int max) {
@@ -235,16 +216,12 @@ public class ExoRobot {
         packet.setRotation(rotation);
         this.planetConnector.write(packet);
 
-        try {
-            this.cyclicBarrier.await();
-            this.cyclicBarrier.reset();
-        } catch (final InterruptedException | BrokenBarrierException e) {
-            e.printStackTrace();
-        }
+        this.cyclicBarrier.awaitThenReset();
     }
 
-    private void scan() {
-
+    public void scan() {
+        this.planetConnector.write(new RobotScanPacket());
+        this.cyclicBarrier.awaitThenReset();
     }
 
     public void destroy() {

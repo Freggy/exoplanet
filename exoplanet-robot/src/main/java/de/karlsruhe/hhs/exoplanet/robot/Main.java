@@ -72,6 +72,8 @@ public class Main {
                 doLand(robot, console, parts);
             } else if (parts[0].equalsIgnoreCase("rotate")) {
                 doRotate(robot, console, parts);
+            } else if (parts[0].equalsIgnoreCase("scan")) {
+                robot.scan();
             } else {
                 console.println("FEHLER: Nicht erkannter Befehl");
             }
